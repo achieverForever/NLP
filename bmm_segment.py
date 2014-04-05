@@ -4,7 +4,7 @@ import re
 from tkinter import simpledialog
 from tkinter import *
 
-K_DICT_FILE = 'chinese_dict.txt'
+K_DICT_FILE = 'data/chinese_dict.txt'
 
 class BMMSegment:
 	def __init__(self, maxLen):
@@ -26,7 +26,6 @@ class BMMSegment:
 		totalLen = len(inputStr)
 		startPos = 0
 		result = [False] * totalLen
-		debug = ''
 
 		while startPos < totalLen:
 			remainLen = totalLen - startPos
@@ -42,16 +41,11 @@ class BMMSegment:
 				startPos += step
 				result[oldPos+step-1] = True
 				tmp = inputStr[oldPos:startPos]
-				debug += tmp + '/  '
 				print('[Error] Failed to segment "' + tmp + '", no match found in dictionary')
 			else:
 				# Match found in dictionary, mark a cutting flag
 				result[startPos+len(subStr)-1] = True
 				startPos += currLen
-				debug += subStr + '/  '
-		print('Forward MM:')
-		print(debug)
-		# print(result)
 		return result
 		
 	# @param inputStr, a string to be segmented
@@ -60,7 +54,6 @@ class BMMSegment:
 		totalLen = len(inputStr)
 		endPos = totalLen - 1
 		result = [False] * totalLen
-		debug = ''
 
 		while endPos >= 0:
 			remainLen = endPos + 1
@@ -77,16 +70,11 @@ class BMMSegment:
 				endPos -= step
 				result[oldPos] = True
 				tmp = inputStr[oldPos-step+1:oldPos+1]
-				debug = tmp + '/  ' + debug
 				print('[Error] Failed to segment "' + tmp + '", no match found in dictionary')
 			else:
 				# Match found in dictionary, mark a cutting flag
 				result[endPos] = True
 				endPos -= currLen
-				debug = subStr + '/  ' + debug
-		print('Reverse MM:')
-		print(debug)
-		# print(result)
 		return result
 
 	# @param inputStr, a string to be segmented

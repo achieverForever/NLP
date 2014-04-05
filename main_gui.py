@@ -5,6 +5,7 @@ from tkinter.ttk import *
 from tkinter.scrolledtext import ScrolledText
 from bmm_segment import BMMSegment
 from max_prob_segment import MaxProbabilitySegment
+from viterbi_pos_tagger import HMM_Viterbi_POS_TAGGER
 import time
 
 class App(Frame):
@@ -16,6 +17,10 @@ class App(Frame):
         
         self.initUI()
         
+        self.bmm = BMMSegment(4)
+        self.mp = MaxProbabilitySegment()
+        self.tagger = HMM_Viterbi_POS_TAGGER()
+  
     def initUI(self):
       
         self.parent.title("双向最大匹配分词")
@@ -51,6 +56,9 @@ class App(Frame):
         self.mpBtn = Button(self.rightFrame, text="最大概率分词", command=self.onMP)
         self.mpBtn.pack(side="top", expand=True, pady=10)
 
+        self.hmmBtn = Button(self.rightFrame, text='HMM-Viterbi词性标注', command=self.onHMM)
+        self.hmmBtn.pack(side="top", expand=True, pady=10)
+
         # HINT: Place additional button here
 
         self.quitBtn = Button(self.rightFrame, text="退出", command=self.onQuit)
@@ -65,8 +73,7 @@ class App(Frame):
         inStr = self.inputText.get('1.0', END).strip()
 
         start = time.clock()
-        bmm = BMMSegment(4)
-        result = bmm.BMM(inStr, self.inputText)
+        result = self.bmm.BMM(inStr, self.inputText)
 
         self.outputText.insert(INSERT, result)
         elapsed = time.clock() - start
@@ -79,14 +86,29 @@ class App(Frame):
         inStr = self.inputText.get('1.0', END).strip()
 
         start = time.clock()
-        mp = MaxProbabilitySegment()
-        result = mp.MaxProbability(inStr)
+        result = self.mp.MaxProbability(inStr)
 
         self.outputText.insert(INSERT, result)
         elapsed = time.clock() - start
 
         if result != '':
             self.cap2Lbl['text'] = '分词结果    耗时: ' + '{0:.1f} ms'.format(elapsed*1000)
+
+    def onHMM(self):
+        self.outputText.delete('1.0', END)
+        inStr = self.inputText.get('1.0', END).strip()
+        start = time.clock()
+
+        segmented = self.mp.MaxProbability(inStr)
+
+        obs = [w.strip('/') for w in segmented.split()]
+        result = self.tagger.Viterbi(obs)
+        elapsed = time.clock() - start
+
+        self.outputText.insert(INSERT, result)
+
+        if result != '':
+            self.cap2Lbl['text'] = '词性标注结果     耗时: ' + '{0:.1f} ms'.format(elapsed*1000)
 
 
 def main():

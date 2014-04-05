@@ -3,7 +3,7 @@
 
 import re
 
-K_DICT_FILE = 'word_frequency.txt'
+K_DICT_FILE = 'data/word_frequency.txt'
 
 class Word:
 	def __init__(self, beg, end):
