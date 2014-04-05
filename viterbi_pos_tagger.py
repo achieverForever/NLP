@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 from max_prob_segment import MaxProbabilitySegment
 
 WORDS_FILE = 'data/words.txt'

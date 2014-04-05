@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 WORDS_FILE = 'data/words.txt'
 TAGS_FILE = 'data/tags.txt'
 TRANS_MATRIX_FILE = 'data/trans_matrix.txt'
