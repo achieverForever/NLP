@@ -47,7 +47,13 @@ class HMM_Viterbi_POS_TAGGER:
 	# @return a pos-tagged string using HMM-Viterbi algorithm
 	def Viterbi(self, observations):
 		K = len(self.hmm.states)
-		obs = [self.hmm.word2id[w] for w in observations]	# Convert word to id
+		# obs = [self.hmm.word2id[w] for w in observations]	# Convert word to id
+		obs = []
+		for w in observations:
+			try:
+				obs.append(self.hmm.word2id[w])
+			except:		
+				obs.append(-1)
 		T = len(obs)
 	  
 		# K x T
@@ -66,20 +72,27 @@ class HMM_Viterbi_POS_TAGGER:
 			P[i][0] = i
 
 		for t in range(1, T):	# For each time step
+			obs_t = obs[t]
 			for j in range(K):	# For each state at time t
 				maxp = -1.0
 				prev = -1
 				for k in range(K):	# For each previous state
-					if maxp < self.hmm.emit_p[j][obs[t]] * self.hmm.trans_p[k][j] * V[k][t-1]:
-						maxp = self.hmm.emit_p[j][obs[t]] * self.hmm.trans_p[k][j] * V[k][t-1]
-						prev = k
+					if obs_t == -1:	
+						# Special handling of the new word not in dictionary
+						if maxp < 1e-20 * self.hmm.trans_p[k][j] * V[k][t-1]:
+							maxp = 1e-20 * self.hmm.trans_p[k][j] * V[k][t-1]
+							prev = k
+					else:
+						if maxp < self.hmm.emit_p[j][obs[t]] * self.hmm.trans_p[k][j] * V[k][t-1]:
+							maxp = self.hmm.emit_p[j][obs[t]] * self.hmm.trans_p[k][j] * V[k][t-1]
+							prev = k
 				V[j][t] = maxp
 				P[j][t] = prev
 
 		# Find the last hidden state with maximum probability
 		maxp, state = max([(V[i][T-1], i) for i in range(K)])
 
-		# Contruct the tags sequence 
+		# Construct the tags sequence 
 		prev = state
 		tags = []
 		for t in reversed(range(T)):
@@ -93,9 +106,10 @@ class HMM_Viterbi_POS_TAGGER:
 
 
 if __name__ == '__main__':
-	inputStr = '在这一年中，中国的改革开放和现代化建设继续向前迈进。'
+	inputStr = '在这一年中，中国的改革开放和现代化ss建设继续向前迈进。'
 	mp = MaxProbabilitySegment()
 	segmented =  mp.MaxProbability(inputStr)
+	print(segmented)
 	obs = [w.strip('/') for w in segmented.split()]
 	tagger = HMM_Viterbi_POS_TAGGER()
 	print(tagger.Viterbi(obs))
