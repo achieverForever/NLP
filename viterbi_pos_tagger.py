@@ -11,6 +11,11 @@ INIT_PROB_FILE = 'data/init_prob.txt'
 
 class HMMModel:
 	def __init__(self):
+		self.states = None
+		self.trans_p = None
+		self.emit_p = None
+		self.init_p = None
+		self.word2id = None
 		self.loadModelParameters()
 
 	def loadModelParameters(self):
