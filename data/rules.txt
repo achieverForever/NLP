@@ -1,0 +1,14 @@
+#BEGIN RULE
+S -> NP VP
+NP -> art n
+NP -> art adj n
+VP -> v
+VP -> v NP
+#END RULE
+
+#BEGIN TERMINAL
+art -> the|a
+adj -> old
+n -> man
+v -> cried
+#END TERMINAL

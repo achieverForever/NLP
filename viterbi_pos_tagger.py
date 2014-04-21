@@ -19,6 +19,7 @@ class HMMModel:
 		self.loadModelParameters()
 
 	def loadModelParameters(self):
+		''' Load HMM model parameters from files '''
 		self.states = []
 		self.word2id = {}
 		with open(WORDS_FILE, encoding='utf-8') as fd:
@@ -51,6 +52,7 @@ class HMM_Viterbi_POS_TAGGER:
 	# @param observations, a lisf of segmented word
 	# @return a pos-tagged string using HMM-Viterbi algorithm
 	def Viterbi(self, observations):
+		''' Calculate the hidden state sequence with maxinum probability using HMM-Viterbi algorithm '''
 		K = len(self.hmm.states)
 		# obs = [self.hmm.word2id[w] for w in observations]	# Convert word to id
 		obs = []
@@ -69,11 +71,11 @@ class HMM_Viterbi_POS_TAGGER:
 		# K x T
 		# P[i][j] stores the previous state sj-1 of the most likely path so far 
 		P = [[-1 for i in range(T)] for j in range(K)]
-
-
+		
 		# For each state at time 0, compute its probability
 		for i in range(K):	
-			V[i][0] = self.hmm.init_p[i] * self.hmm.emit_p[i][obs[0]]
+			emit_i_0 = 1e-20 if obs[0] == -1 else self.hmm.emit_p[i][obs[0]]
+			V[i][0] = self.hmm.init_p[i] * emit_i_0
 			P[i][0] = i
 
 		for t in range(1, T):	# For each time step
@@ -82,15 +84,11 @@ class HMM_Viterbi_POS_TAGGER:
 				maxp = -1.0
 				prev = -1
 				for k in range(K):	# For each previous state
-					if obs_t == -1:	
-						# Special handling of the new word not in dictionary
-						if maxp < 1e-20 * self.hmm.trans_p[k][j] * V[k][t-1]:
-							maxp = 1e-20 * self.hmm.trans_p[k][j] * V[k][t-1]
-							prev = k
-					else:
-						if maxp < self.hmm.emit_p[j][obs[t]] * self.hmm.trans_p[k][j] * V[k][t-1]:
-							maxp = self.hmm.emit_p[j][obs[t]] * self.hmm.trans_p[k][j] * V[k][t-1]
-							prev = k
+					# Special handling of the new word not in dictionary
+					emit_j_t = 1e-20 if obs_t == -1 else self.hmm.emit_p[j][obs[t]]
+					if maxp < emit_j_t * self.hmm.trans_p[k][j] * V[k][t-1]:
+						maxp = emit_j_t * self.hmm.trans_p[k][j] * V[k][t-1]
+						prev = k
 				V[j][t] = maxp
 				P[j][t] = prev
 
