@@ -9,6 +9,7 @@ from bmm_segment import BMMSegment
 from max_prob_segment import MaxProbabilitySegment
 from viterbi_pos_tagger import HMM_Viterbi_POS_TAGGER
 from top_down_parser import TopDownParser
+from cyk_parser import CYKParser
 
 import time
 
@@ -25,6 +26,7 @@ class App(Frame):
         self.mp = MaxProbabilitySegment()
         self.tagger = HMM_Viterbi_POS_TAGGER()
         self.parser = TopDownParser()
+        self.cykParser = CYKParser()
   
     def initUI(self):
       
@@ -39,7 +41,7 @@ class App(Frame):
 
         self.menubar = Menu(self.parent)
         self.fileMenu = Menu(self.menubar, tearoff=0)
-        self.fileMenu.add_command(label="读入规则文件", command=self.onLoadRules)
+        self.fileMenu.add_command(label="读入规则文件", command=self.onLoadRules_CYK)
         self.fileMenu.add_separator()
         self.fileMenu.add_command(label="退出", command=self.parent.quit)
         self.menubar.add_cascade(label="文件", menu=self.fileMenu)
@@ -47,7 +49,7 @@ class App(Frame):
         self.parent.config(menu=self.menubar)
 
         
-        self.label1 = Label(self, text="请输入语法规则或加载规则文件(如：S -> NP VP)")
+        self.label1 = Label(self, text="请输入PCFG语法规则或加载规则文件(如：S -> NP VP 0.1)")
         self.label1.grid(sticky=W, pady=4, padx=5)
         
         self.inputText = ScrolledText(self)
@@ -74,8 +76,11 @@ class App(Frame):
         self.hmmBtn = Button(self.rightFrame, text='HMM词性标注', command=self.onHMM)
         self.hmmBtn.pack(side="top", expand=True, pady=8)
 
-        self.parseBtn = Button(self.rightFrame, text='语法分析', command=self.onParse)
+        self.parseBtn = Button(self.rightFrame, text='语法分析', command=self.onTopdownParse)
         self.parseBtn.pack(side="top", expand=True, pady=8)
+
+        self.cykBtn = Button(self.rightFrame, text='PCFG语法分析', command=self.onCYK)
+        self.cykBtn.pack(side="top", expand=True, pady=8)
 
         # HINT: Place additional button here
 
@@ -86,6 +91,9 @@ class App(Frame):
     def onQuit(self):
         self.quit()
 
+
+    ##############################  BMM Segmentation #########################################
+    
     def onBMM(self):
         self.outputText.delete('1.0', END)
         inStr = self.inputText.get('1.0', END).strip()
@@ -99,6 +107,9 @@ class App(Frame):
         if result != '':
             self.label2['text'] = '分词结果    耗时: ' + '{0:.1f} ms'.format(elapsed*1000)
 
+
+    ######################### Maximum Probability Segmentation ###############################
+
     def onMP(self):
         self.outputText.delete('1.0', END)
         inStr = self.inputText.get('1.0', END).strip()
@@ -111,6 +122,9 @@ class App(Frame):
 
         if result != '':
             self.label2['text'] = '分词结果    耗时: ' + '{0:.1f} ms'.format(elapsed*1000)
+
+
+    ############################## HMM Pos-tagging ##########################################
 
     def onHMM(self):
         self.outputText.delete('1.0', END)
@@ -131,7 +145,10 @@ class App(Frame):
         if result != '':
             self.label2['text'] = '词性标注结果     耗时: ' + '{0:.1f} ms'.format(elapsed*1000)
 
-    def onParse(self):
+
+    ##############################  Top-down parsing #########################################
+
+    def onTopdownParse(self):
         inStr = self.outputText.get('1.0', END).strip()
         if inStr == '':
             sentence = ['the', 'old', 'man', 'cried']
@@ -156,11 +173,11 @@ class App(Frame):
             parseString = self.parser.printParseTree()
             self.textbox.insert(INSERT, parseString)
 
-            self.buildParseTree('', 'S', self.parser.rules, self.parser.choices)            
+            self.buildParseTree_TopDown('', 'S', self.parser.rules, self.parser.choices)            
         else:
             self.label2['text'] = '语法分析完成     结果：失败       耗时：' + '{0:.1f} ms'.format(elapsed*1000)
 
-    def onLoadRules(self):
+    def onLoadRules_TopDown(self):
         fname = askopenfilename(initialdir='./data', initialfile='rules.txt')
         if fname != '':
             self.inputText.delete('1.0', END)
@@ -168,7 +185,7 @@ class App(Frame):
                 self.inputText.insert(INSERT, f.read())
             self.parser.loadRules(fname)
 
-    def buildParseTree(self, parent, symbol, rules, choices):
+    def buildParseTree_TopDown(self, parent, symbol, rules, choices):
         if choices[symbol] == -1:
             newNode = self.tree.insert(parent, 'end', text=symbol, open=True)
             self.tree.insert(newNode, 'end', text=' | '.join(rules[symbol][0]))
@@ -176,7 +193,55 @@ class App(Frame):
             c = choices[symbol]
             newParent = self.tree.insert(parent, 'end', text=symbol, open=True)
             for symbl in rules[symbol][c]:
-                self.buildParseTree(newParent, symbl, rules, choices)
+                self.buildParseTree_TopDown(newParent, symbl, rules, choices)
+    
+
+    ##############################  CYK-PCFG parsing #########################################
+
+    def onLoadRules_CYK(self):
+        fname = askopenfilename(initialdir='./data', initialfile='rules_pcfg.txt')
+        if fname != '':
+            self.inputText.delete('1.0', END)
+            with open(fname) as f:
+                self.inputText.insert(INSERT, f.read())
+            self.parser.loadRules(fname)
+
+    def buildParseTree_CYK(self, parent, beg, end, symbol_id):
+        backPt = self.cykParser.BP[beg][end][symbol_id]
+        symbol = self.cykParser.id2symb[symbol_id]
+
+        if backPt.s == -1:
+            newNode = self.tree.insert(parent, 'end', text=symbol, open=True)
+            self.tree.insert(newNode, 'end', text=self.cykParser.words[beg-1], open=True)
+        else:
+            newParent = self.tree.insert(parent, 'end', text=symbol, open=True)
+            self.buildParseTree_CYK(newParent, beg, backPt.s, backPt.Y)
+            self.buildParseTree_CYK(newParent, backPt.s+1, end, backPt.Z)
+
+    def onCYK(self):
+        inStr = self.outputText.get('1.0', END).strip()
+        if inStr == '':
+            sentence = 'people fish people tanks'
+            self.outputText.insert(INSERT, sentence)
+        else:
+            sentence = inStr
+
+        start = time.clock()
+        parseString, prob = self.cykParser.parse(sentence)
+        elapsed = time.clock() - start
+
+        self.label2['text'] = 'PCFG语法分析完成     结果：成功       耗时：' + '{0:.1f} ms'.format(elapsed*1000)
+        newWindow = Toplevel(self)
+        newWindow.title('PCFG语法分析')
+        self.textbox = Entry(newWindow)
+        self.textbox.pack(fill=X, expand=1)
+        self.tree = Treeview(newWindow)
+        self.tree.heading('#0', text='语法树 (概率:{0:.8f})'.format(prob), anchor='w')
+        self.tree.pack(fill=BOTH, expand=1)
+
+        self.textbox.insert(INSERT, parseString)
+
+        self.buildParseTree_CYK('', 1, len(self.cykParser.words), self.cykParser.symb2id['S'])
 
 def main():
   

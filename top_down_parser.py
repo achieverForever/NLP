@@ -111,7 +111,7 @@ class TopDownParser:
 		failed = False
 		# Begin with the START symbol
 		currState = State(['S'], 1)
-		while not succeed and not False:
+		while not succeed and not failed:
 
 			if not currState.symbols and currState.pos == len(sentence)+1:
 				return True
