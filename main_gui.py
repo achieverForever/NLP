@@ -221,7 +221,7 @@ class App(Frame):
     def onCYK(self):
         inStr = self.outputText.get('1.0', END).strip()
         if inStr == '':
-            sentence = 'people fish people tanks'
+            sentence = 'fish people fish tanks'
             self.outputText.insert(INSERT, sentence)
         else:
             sentence = inStr

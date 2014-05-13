@@ -170,7 +170,7 @@ class CYKParser:
 		return (parseString, prob)
 
 def main():
-	sentence = 'people fish people tanks'
+	sentence = 'fish people fish tanks'
 	parser = CYKParser()
 	parseString, prob = parser.parse(sentence)
 	print(parseString)
