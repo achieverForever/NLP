@@ -10,6 +10,7 @@ from max_prob_segment import MaxProbabilitySegment
 from viterbi_pos_tagger import HMM_Viterbi_POS_TAGGER
 from top_down_parser import TopDownParser
 from cyk_parser import CYKParser
+import regex
 
 import time
 
@@ -65,7 +66,7 @@ class App(Frame):
             padx=5, sticky=E+S+W)
 
         self.rightFrame = Frame(self)
-        self.rightFrame.grid(row=1, column=2, columnspan=7)
+        self.rightFrame.grid(row=1, column=3, rowspan=7)
 
         self.bmmBtn = Button(self.rightFrame, text="双向最大匹配", command=self.onBMM)
         self.bmmBtn.pack(side="top", expand=True, pady=8)
@@ -81,6 +82,9 @@ class App(Frame):
 
         self.cykBtn = Button(self.rightFrame, text='PCFG语法分析', command=self.onCYK)
         self.cykBtn.pack(side="top", expand=True, pady=8)
+
+        self.reBtn = Button(self.rightFrame, text='RegEx提取信息', command=self.onRE)
+        self.reBtn.pack(side="top", expand=True, pady=8)
 
         # HINT: Place additional button here
 
@@ -242,6 +246,30 @@ class App(Frame):
         self.textbox.insert(INSERT, parseString)
 
         self.buildParseTree_CYK('', 1, len(self.cykParser.words), self.cykParser.symb2id['S'])
+
+    def onRE(self):
+        window = Toplevel(self)
+        window.title('正则表达式信息提取')
+        label = Label(window)
+        label.pack()
+        result = ScrolledText(window)
+        result.pack(fill=BOTH, expand=1)
+
+        htmlFile = 'data/凤凰网.html'
+        
+        start = time.clock()
+        titles = regex.fetchTitles(htmlFile)
+        links = regex.fetchLinks(htmlFile)
+        elapsed = time.clock() - start
+
+        label['text'] = '耗时:  {0:.1f} ms'.format(elapsed*1000)
+
+        result.insert(INSERT, 'Titles:\n')
+        result.insert(INSERT, '\n'.join(titles))
+
+        result.insert(INSERT, '\n\nLinks:\n')
+        result.insert(INSERT, '\n'.join(links))
+
 
 def main():
   

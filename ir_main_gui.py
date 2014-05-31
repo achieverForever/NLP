@@ -10,6 +10,7 @@ from ir_index_searcher import *
 from tkHyperlinkManager import HyperlinkManager
 
 import time
+import re
 
 class App(Frame):
   
@@ -23,6 +24,7 @@ class App(Frame):
         indexer = Indexer('data/docs.txt', 'data/index.txt', 'data/dict.txt', 'data/params.txt')
         self.searcher = IndexSearcher(indexer)
         self.resultDocs = {}
+        self.query = ''
 
     def initUI(self):
       
@@ -68,11 +70,16 @@ class App(Frame):
         query = self.searchFor.get().strip()
         self.outputText.delete('1.0', END)
         self.docText.delete('1.0', END)
+        self.query = query.lower()
         isResultEmpty = True
+        start = time.clock()
 
         if self.mode.get() == 1:
             q = Query(query, SEARCH_MODE_KEYWORD)
+
             hits = self.searcher.search(q, 10)
+            elapsed = time.clock() - start
+
             if hits is not None:
                 isResultEmpty = False
                 for hit in hits:
@@ -83,6 +90,8 @@ class App(Frame):
         else:
             q = Query(query, SEARCH_MODE_PHRASE)
             hits = self.searcher.search(q, 10)
+            elapsed = time.clock() - start
+
             if hits is not None:
                 isResultEmpty = False
                 for hit in hits:
@@ -95,12 +104,31 @@ class App(Frame):
             self.outputText.insert(INSERT, '0 results returned')
             return
 
+        self.label2['text'] = ' 结果：     耗时：{0:.1f} ms'.format(elapsed*1000)
         docIds = [hit.docId for hit in hits]
         self.resultDocs = self.searcher.indexer.getDocsFromIds(docIds)
+        self.onLinkClicked(hits[0].docId)
 
     def onLinkClicked(self, docId):
         self.docText.delete('1.0', END)
-        self.docText.insert(INSERT, self.resultDocs[docId])
+        # self.docText.insert(INSERT, self.resultDocs[docId])
+
+        doc = self.resultDocs[docId]
+        p = re.compile(self.query, re.IGNORECASE)
+        lastPos = 0
+        while True:
+            m = p.search(doc, lastPos)
+            if m is None:
+                break
+            before = doc[lastPos:m.start()]
+            lastPos = m.end()
+            self.docText.insert(INSERT, before)
+
+            self.docText.insert(INSERT, doc[m.start():m.end()], "highlight")
+
+        if lastPos < len(doc):
+            self.docText.insert(INSERT, doc[lastPos:])
+
 
 
 def main():
